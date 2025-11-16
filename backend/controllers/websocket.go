@@ -1,6 +1,7 @@
 package controllers
 
 import (
+	"log"
 	"net/http"
 
 	"github.com/gorilla/websocket"
@@ -23,37 +24,37 @@ var broadcast = make(chan JobStatus)
 func WebSocketHandler(w http.ResponseWriter, r *http.Request) {
 	ws, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
-		Logger.Errorf("WebSocket upgrade error: %v", err)
+		log.Println("WebSocket Upgrade Error:", err)
 		return
 	}
 	defer ws.Close()
 
 	clients[ws] = true
-	Logger.Info("New WebSocket connection established")
+	log.Println("New WebSocket connection established!")
 
 	for {
 		_, _, err := ws.ReadMessage()
 		if err != nil {
 			delete(clients, ws)
-			Logger.Debugf("WebSocket connection closed: %v", err)
+			log.Println("WebSocket connection closed:", err)
 			break
 		}
 	}
 }
 
 func BroadcastJobStatus(jobStatus JobStatus) {
-	Logger.Debug("Broadcasting job status", "job", jobStatus.Job, "status", jobStatus.Status)
+	log.Printf("Broadcasting: %+v\n", jobStatus)
 	broadcast <- jobStatus
 }
 
 func JobStatusManager() {
 	for {
 		jobStatus := <-broadcast
-		Logger.Debug("Sending job status to clients", "job", jobStatus.Job, "status", jobStatus.Status)
+		log.Printf("Sending to clients: %+v\n", jobStatus)
 		for client := range clients {
 			err := client.WriteJSON(jobStatus)
 			if err != nil {
-				Logger.Warnf("WebSocket write error: %v", err)
+				log.Printf("WebSocket Write Error: %v\n", err)
 				client.Close()
 				delete(clients, client)
 			}

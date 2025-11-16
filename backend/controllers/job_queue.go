@@ -1,6 +1,8 @@
 package controllers
 
 import (
+	"fmt"
+	"log"
 	"sync"
 )
 
@@ -35,7 +37,7 @@ func (q *JobQueue) AddJob(job Job) {
 
 func (q *JobQueue) processJobs() {
 	for job := range q.jobChannel {
-		Logger.Info("Executing job", "job", job.Name)
+		fmt.Printf("Executing job: %s\n", job.Name)
 
 		go BroadcastJobStatus(JobStatus{
 			Job:    job.Name,
@@ -43,14 +45,14 @@ func (q *JobQueue) processJobs() {
 		})
 
 		if err := job.Execute(); err != nil {
-			Logger.Error("Job execution failed", "job", job.Name, "error", err)
+			log.Printf("Error executing job %s: %v\n", job.Name, err)
 
 			go BroadcastJobStatus(JobStatus{
 				Job:    job.Name,
 				Status: "failure",
 			})
 		} else {
-			Logger.Info("Job completed successfully", "job", job.Name)
+			log.Printf("Success in executing job %s\n", job.Name)
 
 			go BroadcastJobStatus(JobStatus{
 				Job:    job.Name,

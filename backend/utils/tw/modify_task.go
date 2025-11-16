@@ -2,59 +2,56 @@ package tw
 
 import (
 	"ccsync_backend/utils"
-
 	"fmt"
 	"os"
 	"strings"
 )
 
 func ModifyTaskInTaskwarrior(uuid, description, project, priority, status, due, email, encryptionSecret, taskID string, tags []string) error {
-	Logger.Debug("Starting task modification", "taskID", taskID, "email", email)
-
 	if err := utils.ExecCommand("rm", "-rf", "/root/.task"); err != nil {
-		Logger.Error("Error deleting Taskwarrior data", "error", err)
+		fmt.Println("1")
 		return fmt.Errorf("error deleting Taskwarrior data: %v", err)
 	}
 	tempDir, err := os.MkdirTemp("", "taskwarrior-"+email)
 	if err != nil {
-		Logger.Error("Failed to create temporary directory", "error", err)
+		fmt.Println("2")
 		return fmt.Errorf("failed to create temporary directory: %v", err)
 	}
 	defer os.RemoveAll(tempDir)
 
 	origin := os.Getenv("CONTAINER_ORIGIN")
 	if err := SetTaskwarriorConfig(tempDir, encryptionSecret, origin, uuid); err != nil {
-		Logger.Error("Failed to set Taskwarrior config", "error", err)
+		fmt.Println("4")
 		return err
 	}
 
 	if err := SyncTaskwarrior(tempDir); err != nil {
-		Logger.Error("Failed to sync Taskwarrior", "error", err)
+		fmt.Println("5")
 		return err
 	}
 
 	escapedDescription := fmt.Sprintf(`description:"%s"`, strings.ReplaceAll(description, `"`, `\"`))
 
 	if err := utils.ExecCommand("task", taskID, "modify", escapedDescription); err != nil {
-		Logger.Error("Failed to modify task description", "taskID", taskID, "error", err)
+		fmt.Println("6")
 		return fmt.Errorf("failed to edit task: %v", err)
 	}
 
 	escapedProject := fmt.Sprintf(`project:%s`, strings.ReplaceAll(project, `"`, `\"`))
 	if err := utils.ExecCommand("task", taskID, "modify", escapedProject); err != nil {
-		Logger.Error("Failed to modify task project", "taskID", taskID, "error", err)
+		fmt.Println("7")
 		return fmt.Errorf("failed to edit task project: %v", err)
 	}
 
 	escapedPriority := fmt.Sprintf(`priority:%s`, strings.ReplaceAll(priority, `"`, `\"`))
 	if err := utils.ExecCommand("task", taskID, "modify", escapedPriority); err != nil {
-		Logger.Error("Failed to modify task priority", "taskID", taskID, "error", err)
+		fmt.Println("8")
 		return fmt.Errorf("failed to edit task priority: %v", err)
 	}
 
 	escapedDue := fmt.Sprintf(`due:%s`, strings.ReplaceAll(due, `"`, `\"`))
 	if err := utils.ExecCommand("task", taskID, "modify", escapedDue); err != nil {
-		Logger.Error("Failed to modify task due date", "taskID", taskID, "error", err)
+		fmt.Println("8")
 		return fmt.Errorf("failed to edit task due: %v", err)
 	}
 
@@ -90,10 +87,9 @@ func ModifyTaskInTaskwarrior(uuid, description, project, priority, status, due, 
 	}
 
 	if err := SyncTaskwarrior(tempDir); err != nil {
-		Logger.Error("Failed to sync Taskwarrior after modification", "error", err)
+		fmt.Println("11")
 		return err
 	}
 
-	Logger.Info("Task modified successfully", "taskID", taskID)
 	return nil
 }
