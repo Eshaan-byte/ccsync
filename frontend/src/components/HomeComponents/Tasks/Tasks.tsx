@@ -71,6 +71,7 @@ import { debounce } from '@/components/utils/utils';
 import { DatePicker } from '@/components/ui/date-picker';
 import { format } from 'date-fns';
 import { Taskskeleton } from './Task-Skeleton';
+import { TagSelector } from '@/components/ui/tag-selector';
 
 const db = new TasksDatabase();
 export let syncTasksWithTwAndDb: () => any;
@@ -103,7 +104,6 @@ export const Tasks = (
   });
   const [isAddTaskOpen, setIsAddTaskOpen] = useState(false);
   const [_isDialogOpen, setIsDialogOpen] = useState(false);
-  const [tagInput, setTagInput] = useState('');
 
   const [isEditing, setIsEditing] = useState(false);
   const [editedDescription, setEditedDescription] = useState('');
@@ -542,20 +542,9 @@ export const Tasks = (
     }
   };
 
-  // Handle adding a tag
-  const handleAddTag = () => {
-    if (tagInput && !newTask.tags.includes(tagInput, 0)) {
-      setNewTask({ ...newTask, tags: [...newTask.tags, tagInput] });
-      setTagInput(''); // Clear the input field
-    }
-  };
-
-  // Handle removing a tag
-  const handleRemoveTag = (tagToRemove: string) => {
-    setNewTask({
-      ...newTask,
-      tags: newTask.tags.filter((tag) => tag !== tagToRemove),
-    });
+  // Handle tag changes for Add Task dialog
+  const handleNewTaskTagsChange = (tags: string[]) => {
+    setNewTask({ ...newTask, tags });
   };
 
   const sortWithOverdueOnTop = (tasks: Task[]) => {
@@ -889,43 +878,15 @@ export const Tasks = (
                               </div>
                             </div>
                             <div className="grid grid-cols-4 items-center gap-4">
-                              <Label
-                                htmlFor="description"
-                                className="text-right"
-                              >
+                              <Label htmlFor="tags" className="text-right">
                                 Tags
                               </Label>
-                              <Input
-                                id="tags"
-                                name="tags"
+                              <TagSelector
+                                selectedTags={newTask.tags}
+                                availableTags={uniqueTags}
+                                onTagsChange={handleNewTaskTagsChange}
                                 placeholder="Add a tag"
-                                value={tagInput}
-                                onChange={(e) => setTagInput(e.target.value)}
-                                onKeyDown={(e) =>
-                                  e.key === 'Enter' && handleAddTag()
-                                } // Allow adding tag on pressing Enter
-                                required
-                                className="col-span-3"
                               />
-                            </div>
-
-                            <div className="mt-2">
-                              {newTask.tags.length > 0 && (
-                                <div className="flex flex-wrap gap-2">
-                                  {newTask.tags.map((tag, index) => (
-                                    <Badge key={index}>
-                                      <span>{tag}</span>
-                                      <button
-                                        type="button"
-                                        className="ml-2 text-red-500"
-                                        onClick={() => handleRemoveTag(tag)}
-                                      >
-                                        ✖
-                                      </button>
-                                    </Badge>
-                                  ))}
-                                </div>
-                              )}
                             </div>
                           </div>
                           <DialogFooter>
@@ -1561,35 +1522,31 @@ export const Tasks = (
                                         <TableCell>Tags:</TableCell>
                                         <TableCell>
                                           {isEditingTags ? (
-                                            <div className="flex items-center">
-                                              <Input
-                                                type="text"
-                                                value={editedTags.join(', ')}
-                                                onChange={(e) =>
-                                                  setEditedTags(
-                                                    e.target.value
-                                                      .split(',')
-                                                      .map((tag) => tag.trim())
-                                                  )
-                                                }
-                                                className="flex-grow mr-2"
+                                            <div className="space-y-2">
+                                              <TagSelector
+                                                selectedTags={editedTags}
+                                                availableTags={uniqueTags}
+                                                onTagsChange={setEditedTags}
+                                                placeholder="Add or select tags"
                                               />
-                                              <Button
-                                                variant="ghost"
-                                                size="icon"
-                                                onClick={() =>
-                                                  handleSaveTags(task)
-                                                }
-                                              >
-                                                <CheckIcon className="h-4 w-4 text-green-500" />
-                                              </Button>
-                                              <Button
-                                                variant="ghost"
-                                                size="icon"
-                                                onClick={handleCancelTags}
-                                              >
-                                                <XIcon className="h-4 w-4 text-red-500" />
-                                              </Button>
+                                              <div className="flex gap-2">
+                                                <Button
+                                                  variant="ghost"
+                                                  size="icon"
+                                                  onClick={() =>
+                                                    handleSaveTags(task)
+                                                  }
+                                                >
+                                                  <CheckIcon className="h-4 w-4 text-green-500" />
+                                                </Button>
+                                                <Button
+                                                  variant="ghost"
+                                                  size="icon"
+                                                  onClick={handleCancelTags}
+                                                >
+                                                  <XIcon className="h-4 w-4 text-red-500" />
+                                                </Button>
+                                              </div>
                                             </div>
                                           ) : (
                                             <div className="flex items-center">
@@ -2009,6 +1966,17 @@ export const Tasks = (
                                   placeholder="Select a due date"
                                 />
                               </div>
+                            </div>
+                            <div className="grid grid-cols-4 items-center gap-4">
+                              <Label htmlFor="tags" className="text-right">
+                                Tags
+                              </Label>
+                              <TagSelector
+                                selectedTags={newTask.tags}
+                                availableTags={uniqueTags}
+                                onTagsChange={handleNewTaskTagsChange}
+                                placeholder="Add a tag"
+                              />
                             </div>
                           </div>
                           <DialogFooter>
